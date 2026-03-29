@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from . import models, schemas
-from .utils.security import get_password_hash
+import models, schemas
+from utils.security import get_password_hash  # ← Removed the dot
 
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
@@ -17,7 +17,6 @@ def get_job_applications(db: Session, user_id: int, skip: int = 0, limit: int = 
     return db.query(models.JobApplication).filter(models.JobApplication.user_id == user_id).order_by(models.JobApplication.date_applied.desc()).offset(skip).limit(limit).all()
 
 def create_job_application(db: Session, application: schemas.JobApplicationCreate, user_id: int):
-    # Depending on pydantic version, model_dump() is preferred over dict()
     try:
         app_data = application.model_dump()
     except AttributeError:

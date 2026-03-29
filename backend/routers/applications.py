@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from .. import schemas, crud, database, models
-from .auth import get_current_user
-from ..utils.s3 import create_presigned_upload_url, create_presigned_download_url
+import schemas, crud, database, models
+from routers.auth import get_current_user
+from utils.s3 import create_presigned_upload_url, create_presigned_download_url
 import uuid
 
 router = APIRouter(prefix="/applications", tags=["applications"])
