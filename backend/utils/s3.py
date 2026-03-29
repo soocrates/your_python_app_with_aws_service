@@ -1,5 +1,6 @@
 import os
 import boto3
+from botocore.client import Config
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 
@@ -10,9 +11,11 @@ S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 def get_s3_client():
     return boto3.client(
         "s3",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "test"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "test"),
         region_name=os.getenv("AWS_REGION", "us-east-1"),
+        endpoint_url=os.getenv("S3_ENDPOINT_URL"),  # <-- IMPORTANT for LocalStack
+        config=Config(signature_version="s3v4"),
     )
 
 def create_presigned_upload_url(object_name, expiration=3600):

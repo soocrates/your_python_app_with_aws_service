@@ -7,7 +7,7 @@ load_dotenv()
 
 # We expect a DATABASE_URL like mysql+pymysql://user:password@host/dbname
 # Defaulting to sqlite for local dev without MySQL
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ats.db")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "mysql+pymysql://ats_user:ats_password@db:3306/ats_db")
 
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
