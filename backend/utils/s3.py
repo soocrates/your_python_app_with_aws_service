@@ -22,28 +22,57 @@ def create_presigned_upload_url(object_name, expiration=3600):
     s3_client = get_s3_client()
     try:
         response = s3_client.generate_presigned_post(
-            S3_BUCKET_NAME,
-            object_name,
-            Fields=None,
+            Bucket=S3_BUCKET_NAME,
+            Key=object_name,
+            Fields={"Content-Type": "application/pdf"},
             Conditions=[
-                ["content-length-range", 0, 10485760] # up to 10MB
+                {"Content-Type": "application/pdf"},
+                ["content-length-range", 0, 10485760]
             ],
-            ExpiresIn=expiration
+            ExpiresIn=3600
         )
         return response
     except ClientError as e:
         print(f"Error generating presigned URL: {e}")
+        return None
+    
+def upload_file_to_s3(file, object_key):
+    s3 = get_s3_client()
+    bucket = os.getenv("S3_BUCKET_NAME")
+
+    s3.upload_fileobj(file.file, bucket, object_key)
+
+
+# def create_presigned_download_url(object_name, expiration=3600):
+#     s3_client = get_s3_client()
+#     try:
+#         response = s3_client.generate_presigned_url(
+#             'get_object',
+#             Params={'Bucket': S3_BUCKET_NAME, 'Key': object_name},
+#             ExpiresIn=expiration
+#         )
+#         return response
+#     except ClientError as e:
+#         print(f"Error generating presigned URL: {e}")
+#         return None
+
+
+def create_presigned_download_url(object_key: str):
+    try:
+        s3 = get_s3_client()  # <-- FIX: call the function
+
+        url = s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": S3_BUCKET_NAME, "Key": object_key},
+            ExpiresIn=3600,
+        )
+
+        # Fix LocalStack hostname for browser
+        url = url.replace("localstack", "localhost")
+
+        return url
+
+    except Exception as e:
+        print("Error generating presigned URL:", e)
         return None
 
-def create_presigned_download_url(object_name, expiration=3600):
-    s3_client = get_s3_client()
-    try:
-        response = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': S3_BUCKET_NAME, 'Key': object_name},
-            ExpiresIn=expiration
-        )
-        return response
-    except ClientError as e:
-        print(f"Error generating presigned URL: {e}")
-        return None

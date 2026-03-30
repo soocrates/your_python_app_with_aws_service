@@ -10,8 +10,8 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="ATS-lite API")
 
 origins = [
-    "http://localhost:5173", # Default Vite
     "http://localhost:3000", # Default CRA
+    "http://localhost:5173" # Default Vite
 ]
 
 app.add_middleware(

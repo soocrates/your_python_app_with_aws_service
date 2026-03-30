@@ -62,28 +62,19 @@ export const updateApplication = async (token, id, application) => {
 };
 
 export const uploadCV = async (token, appId, file) => {
-    // 1. Get presigned URL
-    const urlRes = await fetch(`${API_URL}/applications/${appId}/cv/upload-url?filename=${encodeURIComponent(file.name)}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!urlRes.ok) throw new Error('Failed to get upload URL');
-    const { url, fields, object_key } = await urlRes.json();
-
-    // 2. Upload to S3 directly
     const formData = new FormData();
-    Object.keys(fields).forEach(key => formData.append(key, fields[key]));
-    formData.append('file', file);
+    formData.append("file", file);
 
-    const uploadRes = await fetch(url, {
-        method: 'POST',
+    const response = await fetch(`${API_URL}/applications/${appId}/cv/upload`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        },
         body: formData
     });
-    if (!uploadRes.ok) throw new Error('Failed to upload file to S3');
 
-    // 3. Update application with new cv_s3_key
-    await updateApplication(token, appId, { cv_s3_key: object_key });
-    return object_key;
+    if (!response.ok) throw new Error("Failed to upload CV");
+    return response.json();
 };
 
 export const getDownloadUrl = async (token, appId) => {

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List
 import schemas, crud, database, models
@@ -38,20 +38,34 @@ def delete_application(app_id: int, db: Session = Depends(database.get_db), curr
         raise HTTPException(status_code=404, detail="Application not found")
     return {"message": "Application deleted successfully"}
 
-@router.post("/{app_id}/cv/upload-url")
-def get_cv_upload_url(app_id: int, filename: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
+@router.post("/{app_id}/cv/upload")
+def upload_cv(
+    app_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     db_app = crud.get_job_application(db, application_id=app_id, user_id=current_user.id)
     if db_app is None:
         raise HTTPException(status_code=404, detail="Application not found")
-    
-    ext = filename.split('.')[-1] if '.' in filename else ''
+
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'bin'
     object_key = f"cvs/{current_user.id}/{app_id}/{uuid.uuid4()}.{ext}"
-    
-    presigned_data = create_presigned_upload_url(object_key)
-    if not presigned_data:
-        raise HTTPException(status_code=500, detail="Could not generate presigned URL. Check AWS credentials and S3 settings.")
-        
-    return {"url": presigned_data["url"], "fields": presigned_data["fields"], "object_key": object_key}
+
+    from utils.s3 import upload_file_to_s3
+    upload_file_to_s3(file, object_key)
+
+    # FIX: use Pydantic model, not dict
+    update_model = schemas.JobApplicationUpdate(cv_s3_key=object_key)
+
+    crud.update_job_application(
+        db,
+        application_id=app_id,
+        user_id=current_user.id,
+        app_update=update_model
+    )
+
+    return {"object_key": object_key, "message": "CV uploaded successfully"}
 
 @router.get("/{app_id}/cv/download-url")
 def get_cv_download_url(app_id: int, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
