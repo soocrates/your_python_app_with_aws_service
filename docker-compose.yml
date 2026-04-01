@@ -1,54 +1,54 @@
 version: '3.8'
 
-services:
-  # MySQL Database (Local dev only)
-  db:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: ats_db
-      MYSQL_USER: ats_user
-      MYSQL_PASSWORD: ats_password
-    ports:
-      - "3306:3306" # Expose so you can connect from standard DB clients locally
-    volumes:
-      - db_data:/var/lib/mysql
+  services:
+    # MySQL Database (Local dev only)
+    db:
+      image: mysql:8.0
+      restart: always
+      environment:
+        MYSQL_ROOT_PASSWORD: rootpassword
+        MYSQL_DATABASE: ats_db
+        MYSQL_USER: ats_user
+        MYSQL_PASSWORD: ats_password
+      ports:
+        - "3306:3306" # Expose so you can connect from standard DB clients locally
+      volumes:
+        - db_data:/var/lib/mysql
 
-  localstack:
-    image: localstack/localstack:3.0.2
-    ports:
-      - "4566:4566"
-    environment:
-      - SERVICES=s3
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./localstack-init:/etc/localstack/init/ready.d"
-
-  # FastAPI Backend
-  backend:
-    build: ./backend
-    restart: always
-    ports:
-      - "8000:8080" # Mapped to 8000 since frontend expects localhost:8000
-    environment:
-      - DATABASE_URL=mysql+pymysql://ats_user:ats_password@db:3306/ats_db
-      - JWT_SECRET_KEY=dev_secret_key_123
-      - ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - S3_ENDPOINT_URL=http://localstack:4566
-      - S3_BUCKET_NAME=ats-resumes-bucket
-    depends_on:
+    localstack:
+      image: localstack/localstack:3.0.2
+      ports:
+        - "4566:4566"
+      environment:
+        - SERVICES=s3
+      volumes:
+        - "/var/run/docker.sock:/var/run/docker.sock"
+        - "./localstack-init:/etc/localstack/init/ready.d"
+        
+    # FastAPI Backend
+    backend:
+      build: ./backend
+      restart: always
+      ports:
+        - "8000:8080" # Mapped to 8000 since frontend expects localhost:8000
+      environment:
+        - DATABASE_URL=mysql+pymysql://ats_user:ats_password@db:3306/ats_db
+        - JWT_SECRET_KEY=dev_secret_key_123
+        - ALGORITHM=HS256
+        - ACCESS_TOKEN_EXPIRE_MINUTES=30
+        - S3_ENDPOINT_URL=http://localstack:4566
+        - S3_BUCKET_NAME=ats-resumes-bucket
+      depends_on:
       - db
 
-  # React + Vite Frontend
-  frontend:
-    build: ./frontend
-    restart: always
-    ports:
-      - "3000:80" # Map host's port 3000 to Nginx container's port 80
-    depends_on:
-      - backend
+    # React + Vite Frontend
+    frontend:
+      build: ./frontend
+      restart: always
+      ports:
+        - "3000:80" # Map host's port 3000 to Nginx container's port 80
+      depends_on:
+        - backend
 
 volumes:
   db_data:
